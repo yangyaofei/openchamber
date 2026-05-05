@@ -978,6 +978,14 @@ export const createCodexBackendRuntime = (dependencies) => {
 
       const existing = Array.from(sessions.values()).find((entry) => entry.threadId === threadId);
       if (existing) {
+        const existingCreated = typeof existing.session?.time?.created === 'number'
+          ? existing.session.time.created
+          : created;
+        const existingUpdated = typeof existing.session?.time?.updated === 'number'
+          ? existing.session.time.updated
+          : existingCreated;
+        const nextCreated = Math.min(existingCreated, created);
+        const nextUpdated = Math.max(existingUpdated, updated);
         const nextEntry = {
           ...existing,
           session: {
@@ -986,9 +994,9 @@ export const createCodexBackendRuntime = (dependencies) => {
             directory: cwd,
             time: {
               ...existing.session.time,
-              created: existing.session.time?.created ?? created,
-              updated,
-              ...(isArchived ? { archived: updated } : {}),
+              created: nextCreated,
+              updated: nextUpdated,
+              ...(isArchived ? { archived: nextUpdated } : {}),
             },
           },
           threadId,

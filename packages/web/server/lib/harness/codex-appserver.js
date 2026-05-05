@@ -1050,18 +1050,6 @@ export function createCodexAppServerAdapter({ crypto, emitEvent, onTurnCompleted
       return;
     }
 
-    emitEvent(proc.directory, {
-      type: 'session.updated',
-      properties: {
-        info: {
-          id: proc.sessionId,
-          backendId: 'codex',
-          title,
-          directory: proc.directory,
-        },
-        directory: proc.directory,
-      },
-    });
     if (onThreadNameUpdated) {
       onThreadNameUpdated(proc.sessionId, title);
     }

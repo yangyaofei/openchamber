@@ -53,6 +53,21 @@ type OpenCodePartLike = Part & {
   metadata?: Record<string, unknown>
 }
 
+const openCodeSessionCompatCache = new WeakMap<HarnessSession, { signature: string; value: Session }>()
+
+const getHarnessSessionSignature = (session: HarnessSession): string => {
+  return [
+    session.id,
+    session.title,
+    session.parentId ?? "",
+    session.time.created,
+    session.time.updated ?? "",
+    session.time.archived ?? "",
+    session.directory ?? "",
+    session.backendId,
+  ].join("|")
+}
+
 export function fromOpenCodeSession(session: Session): HarnessSession {
   const source = session as Session & {
     backendId?: string | null
@@ -81,7 +96,40 @@ export function fromOpenCodeSession(session: Session): HarnessSession {
 
 export function toOpenCodeSessionCompat(session: HarnessSession): Session {
   if (isObject(session.raw)) {
-    return session.raw as Session
+    const raw = session.raw as Session & {
+      backendId?: string
+      directory?: string
+    }
+    const canonicalMatchesRaw = raw.id === session.id
+      && raw.title === session.title
+      && (raw.parentID ?? undefined) === (session.parentId ?? undefined)
+      && raw.time?.created === session.time.created
+      && raw.time?.updated === session.time.updated
+      && raw.time?.archived === session.time.archived
+      && (raw.directory ?? undefined) === (session.directory ?? undefined)
+      && (raw.backendId ?? "opencode") === session.backendId
+
+    if (canonicalMatchesRaw) {
+      return raw as Session
+    }
+
+    const signature = getHarnessSessionSignature(session)
+    const cached = openCodeSessionCompatCache.get(session)
+    if (cached?.signature === signature) {
+      return cached.value
+    }
+
+    const value = {
+      ...raw,
+      id: session.id,
+      title: session.title,
+      parentID: session.parentId ?? undefined,
+      time: session.time,
+      ...(session.directory ? { directory: session.directory } : {}),
+      backendId: session.backendId,
+    } as Session
+    openCodeSessionCompatCache.set(session, { signature, value })
+    return value
   }
 
   return {

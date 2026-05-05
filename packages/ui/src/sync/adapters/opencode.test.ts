@@ -35,7 +35,40 @@ describe("OpenCode sync adapter", () => {
       parentId: "ses_parent",
       time: { created: 1, updated: 2 },
     })
-    expect(toOpenCodeSessionCompat(result)).toBe(session)
+    const compat = toOpenCodeSessionCompat(result)
+    expect(compat.id).toBe("ses_1")
+    expect(compat.title).toBe("Build feature")
+    expect(compat.parentID).toBe("ses_parent")
+    expect(compat.time).toEqual({ created: 1, updated: 2 })
+  })
+
+  test("prefers canonical Harness session time over stale raw snapshot", () => {
+    const source = {
+      id: "ses_1",
+      title: "Build feature",
+      parentID: "ses_parent",
+      time: { created: 1, updated: 2 },
+    } as unknown as Session
+    const mapped = fromOpenCodeSession(source)
+    mapped.time.updated = 999
+
+    const compat = toOpenCodeSessionCompat(mapped)
+    expect(compat.time?.updated).toBe(999)
+  })
+
+  test("returns stable compat session reference for unchanged harness session", () => {
+    const source = {
+      id: "ses_1",
+      title: "Build feature",
+      parentID: "ses_parent",
+      time: { created: 1, updated: 2 },
+    } as unknown as Session
+    const mapped = fromOpenCodeSession(source)
+    mapped.time.updated = 999
+
+    const first = toOpenCodeSessionCompat(mapped)
+    const second = toOpenCodeSessionCompat(mapped)
+    expect(first).toBe(second)
   })
 
   test("preserves backendId from session payloads", () => {

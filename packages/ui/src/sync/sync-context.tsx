@@ -1662,7 +1662,7 @@ export function useSidebarSessions(directory?: string): Session[] {
       const wasStreaming = cached?.streamingById.get(session.id) ?? false
       const stableUpdatedAt = isStreaming
         ? (wasStreaming ? cachedUpdatedAt : Math.max(rawUpdatedAt, cachedUpdatedAt, Date.now()))
-        : cachedUpdatedAt
+        : (wasStreaming ? Math.max(rawUpdatedAt, cachedUpdatedAt) : rawUpdatedAt)
       const signature = getSidebarSessionSignature(session, stableUpdatedAt)
       signatures.set(session.id, signature)
       stableUpdatedAtById.set(session.id, stableUpdatedAt)
@@ -1714,12 +1714,24 @@ export function useSidebarSessions(directory?: string): Session[] {
 /** Get one session by id for a directory */
 export function useSession(sessionID?: string | null, directory?: string) {
   const { childStores } = useSyncSystem()
+  const cacheRef = React.useRef<Session | undefined>(undefined)
+  const initializedRef = React.useRef(false)
   const getSnapshot = useCallback(() => {
-    if (directory) {
-      const state = childStores.getChild(directory)?.getState()
-      return state ? getOpenCodeCompatibleSession(state, sessionID) : undefined
+    const next = (() => {
+      if (directory) {
+        const state = childStores.getChild(directory)?.getState()
+        return state ? getOpenCodeCompatibleSession(state, sessionID) : undefined
+      }
+      return findLiveSession(getLiveStates(childStores), sessionID)
+    })()
+
+    if (initializedRef.current && haveEquivalentSyncSnapshots(cacheRef.current, next)) {
+      return cacheRef.current
     }
-    return findLiveSession(getLiveStates(childStores), sessionID)
+
+    cacheRef.current = next
+    initializedRef.current = true
+    return next
   }, [childStores, directory, sessionID])
 
   const subscribe = useCallback((notify: () => void) => {

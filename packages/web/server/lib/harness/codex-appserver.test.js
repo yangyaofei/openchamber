@@ -160,7 +160,7 @@ describe('Codex app-server adapter event mapping', () => {
     expect([...partIds].sort()).toEqual(partIds);
   });
 
-  it('persists and emits Codex threadName updates', async () => {
+  it('forwards Codex threadName updates to backend callback', async () => {
     const events = [];
     const onThreadNameUpdated = vi.fn();
     const adapter = createCodexAppServerAdapter({
@@ -175,12 +175,7 @@ describe('Codex app-server adapter event mapping', () => {
       threadName: 'Generated title',
     });
 
-    expect(events.at(-1).payload).toEqual(expect.objectContaining({
-      type: 'session.updated',
-      properties: expect.objectContaining({
-        info: expect.objectContaining({ id: 'session-1', backendId: 'codex', title: 'Generated title' }),
-      }),
-    }));
+    expect(events).toHaveLength(0);
     expect(onThreadNameUpdated).toHaveBeenCalledWith('session-1', 'Generated title');
   });
 });

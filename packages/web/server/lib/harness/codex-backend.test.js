@@ -442,6 +442,35 @@ describe('Codex backend runtime baseline contract', () => {
     expect(sessions.find((item) => item.id === session.id)?.title).toBe('New title');
   });
 
+  it('does not downgrade session updated time after rename when thread/list is stale', async () => {
+    const { runtime } = createRuntime();
+    const session = await runtime.createSession({ directory: '/repo', title: 'Old title' });
+
+    await runtime.updateSession({
+      sessionID: session.id,
+      title: 'New title',
+    });
+
+    const renamed = await runtime.getSession({ sessionID: session.id });
+    expect(typeof renamed?.time?.updated).toBe('number');
+
+    codexAppServerState.listThreads.mockResolvedValueOnce([
+      {
+        id: 'codex-thread-1',
+        cwd: '/repo',
+        name: 'New title',
+        createdAt: 1,
+        updatedAt: 2,
+        status: { type: 'idle' },
+      },
+    ]);
+
+    const sessions = await runtime.listSessions({ directory: '/repo' });
+    const hydrated = sessions.find((item) => item.id === session.id);
+    expect(hydrated?.title).toBe('New title');
+    expect((hydrated?.time?.updated ?? 0) >= (renamed?.time?.updated ?? 0)).toBe(true);
+  });
+
   it('archives and unsubscribes Codex thread before local delete', async () => {
     const { runtime } = createRuntime();
     const session = await runtime.createSession({ directory: '/repo' });

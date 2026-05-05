@@ -368,8 +368,26 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({
   );
 
   const sessions = React.useMemo(() => {
+    const getSessionUpdatedAt = (session: Session): number => {
+      if (typeof session.time?.updated === 'number' && Number.isFinite(session.time.updated)) {
+        return session.time.updated;
+      }
+      if (typeof session.time?.created === 'number' && Number.isFinite(session.time.created)) {
+        return session.time.created;
+      }
+      return 0;
+    };
+
     const liveById = new Map(liveSessions.map((session) => [session.id, session]));
-    const merged = globalActiveSessions.map((session) => liveById.get(session.id) ?? session);
+    const merged = globalActiveSessions.map((session) => {
+      const liveSession = liveById.get(session.id);
+      if (!liveSession) {
+        return session;
+      }
+      const globalUpdatedAt = getSessionUpdatedAt(session);
+      const liveUpdatedAt = getSessionUpdatedAt(liveSession);
+      return liveUpdatedAt >= globalUpdatedAt ? liveSession : session;
+    });
     const seenIds = new Set(merged.map((session) => session.id));
 
     liveSessions.forEach((session) => {
