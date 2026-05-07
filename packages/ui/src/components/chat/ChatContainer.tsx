@@ -426,10 +426,6 @@ export const ChatContainer: React.FC = () => {
             return false;
         }
 
-        if (streamingMessageId || activeStreamingPhase) {
-            return true;
-        }
-
         const statusType = sessionStatusForCurrent.type ?? 'idle';
         if (statusType === 'busy' || statusType === 'retry') {
             return true;
@@ -441,7 +437,7 @@ export const ChatContainer: React.FC = () => {
             && lastMessage.role === 'assistant'
             && typeof (lastMessage as { time?: { completed?: number } }).time?.completed !== 'number',
         );
-    }, [activeStreamingPhase, currentSessionId, sessionMessages, sessionPermissions.length, sessionQuestions.length, sessionStatusForCurrent.type, streamingMessageId]);
+    }, [currentSessionId, sessionMessages, sessionPermissions.length, sessionQuestions.length, sessionStatusForCurrent.type]);
     const activeRetryStatus = React.useMemo(() => {
         if (!currentSessionId || sessionStatusForCurrent.type !== 'retry') {
             return null;
@@ -842,7 +838,7 @@ export const ChatContainer: React.FC = () => {
         return null;
     }
 
-	if (isSessionHydrating && sessionMessages.length === 0 && !streamingMessageId) {
+	if (isSessionHydrating && sessionMessages.length === 0 && !sessionIsWorking) {
 		return (
 			<div className="relative flex flex-col h-full bg-background">
 				{returnToParentButton}
@@ -898,7 +894,7 @@ export const ChatContainer: React.FC = () => {
         );
     }
 
-	if (sessionMessages.length === 0 && !streamingMessageId) {
+	if (sessionMessages.length === 0 && !sessionIsWorking) {
 		return (
 			<div className="relative flex flex-col h-full bg-background transform-gpu">
 				{returnToParentButton}
