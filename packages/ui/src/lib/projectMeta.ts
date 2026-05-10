@@ -21,6 +21,7 @@ import {
   type RemixiconComponentType,
 } from '@remixicon/react';
 import type { ProjectEntry } from '@/lib/api/types';
+import { getRuntimeUrlResolver } from '@/lib/runtime-url';
 
 type ThemeVariant = 'light' | 'dark';
 
@@ -82,5 +83,5 @@ export const getProjectIconImageUrl = (
     params.set('theme', options.themeVariant);
   }
 
-  return `/api/projects/${encodeURIComponent(project.id)}/icon?${params.toString()}`;
+  return getRuntimeUrlResolver().authenticatedAsset(`/api/projects/${encodeURIComponent(project.id)}/icon`, params);
 };

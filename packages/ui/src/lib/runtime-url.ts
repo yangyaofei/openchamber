@@ -12,6 +12,7 @@ export interface RuntimeUrlConfig {
 
 export interface RuntimeUrlResolver {
   api(path: string, query?: RuntimeUrlQuery): string;
+  authenticatedAsset(path: string, query?: RuntimeUrlQuery): string;
   auth(path: string, query?: RuntimeUrlQuery): string;
   health(query?: RuntimeUrlQuery): string;
   rawFile(path: string, options?: { download?: boolean }): string;
@@ -94,6 +95,20 @@ const withRealtimeAuth = (urlValue: string): string => {
   return `${urlValue}${separator}oc_client_token=${encodeURIComponent(token)}`;
 };
 
+const withQueryAuth = (urlValue: string): string => {
+  const token = getRuntimeBearerTokenSync();
+  if (!token) return urlValue;
+
+  if (ABSOLUTE_URL_PATTERN.test(urlValue)) {
+    const url = new URL(urlValue);
+    url.searchParams.set('oc_client_token', token);
+    return url.toString();
+  }
+
+  const separator = urlValue.includes('?') ? '&' : '?';
+  return `${urlValue}${separator}oc_client_token=${encodeURIComponent(token)}`;
+};
+
 const toWebSocketUrl = (candidate: string, config: RuntimeUrlConfig): string => {
   const url = ABSOLUTE_URL_PATTERN.test(candidate)
     ? new URL(candidate)
@@ -114,6 +129,7 @@ export const createRuntimeUrlResolver = (config: RuntimeUrlConfig = {}): Runtime
 
   return {
     api: http,
+    authenticatedAsset: (path, query) => withQueryAuth(http(path, query)),
     auth: http,
     health: (query) => http('/health', query),
     rawFile: (path, options) => http('/api/fs/raw', { path, download: options?.download === true ? true : undefined }),

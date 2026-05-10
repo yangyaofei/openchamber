@@ -1639,7 +1639,7 @@ const resolveInitialUrl = async () => {
   state.sidecarUrl = localUrl;
   const localAvailable = Boolean(localUrl);
 
-  const localOrigin = shouldUsePackagedUi() ? packagedUiOrigin() : new URL(localUiUrl).origin;
+  const localOrigin = new URL(localUrl).origin;
   let initialUrl = localUiUrl;
   let apiBaseUrl = localUrl;
   let clientToken = '';
@@ -2419,7 +2419,19 @@ const handleInvoke = async (browserWindow, command, args = {}) => {
       if (!targetUrl) {
         throw new Error('Invalid URL');
       }
-      await createAdditionalWindow(targetUrl);
+      let windowUrl = targetUrl;
+      if (shouldUsePackagedUi()) {
+        try {
+          const targetOrigin = new URL(targetUrl).origin;
+          const localOrigin = state.localOrigin ? new URL(state.localOrigin).origin : '';
+          const sidecarOrigin = state.sidecarUrl ? new URL(state.sidecarUrl).origin : '';
+          if (targetOrigin === localOrigin || targetOrigin === sidecarOrigin) {
+            windowUrl = buildPackagedUiUrl('/index.html');
+          }
+        } catch {
+        }
+      }
+      await createAdditionalWindow(windowUrl);
       return null;
     }
 

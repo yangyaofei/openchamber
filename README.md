@@ -113,6 +113,8 @@ openchamber tunnel start --provider cloudflare --mode quick --qr
 openchamber tunnel start --provider cloudflare --mode managed-local --config ~/.cloudflared/config.yml
 openchamber tunnel status --all      # Show tunnel state across instances
 openchamber tunnel stop --port 3000  # Stop tunnel only (server stays running)
+openchamber connect-url --port 3000  # Add this server to OpenChamber Desktop
+openchamber connect-url --port 3000 --qr
 openchamber logs                     # Follow latest instance logs
 OPENCODE_PORT=4096 OPENCODE_SKIP_START=true openchamber                    # Connect to external OpenCode server
 OPENCODE_HOST=https://myhost:4096 OPENCODE_SKIP_START=true openchamber  # Connect via custom host/HTTPS
@@ -130,6 +132,13 @@ Bind managed OpenCode server to all interfaces (use only on trusted networks):
 ```bash
 OPENCHAMBER_OPENCODE_HOSTNAME=0.0.0.0 openchamber --port 3000
 ```
+
+Add this server to OpenChamber Desktop or another OpenChamber app:
+```bash
+openchamber connect-url --port 3000 --qr
+```
+
+Paste the printed `openchamber://connect?...` link in Desktop under Settings -> Remote Instances -> Direct Instances -> Import Link. The link contains the server URL and a client token. It does not enable browser UI password protection; use `--ui-password` when exposing a server beyond localhost.
 
 </details>
 

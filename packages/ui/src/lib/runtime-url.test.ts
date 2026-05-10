@@ -63,12 +63,15 @@ describe('createRuntimeUrlResolver', () => {
     }
   });
 
-  test('adds client token query to realtime URLs only', () => {
+  test('adds client token query to realtime and authenticated asset URLs only', () => {
     setRuntimeBearerToken('oc_client_secret');
     try {
       const urls = createRuntimeUrlResolver({ apiBaseUrl: 'https://api.example' });
 
       expect(urls.api('/api/config/settings')).toBe('https://api.example/api/config/settings');
+      expect(urls.authenticatedAsset('/api/projects/p1/icon', { v: 123 })).toBe(
+        'https://api.example/api/projects/p1/icon?v=123&oc_client_token=oc_client_secret',
+      );
       expect(urls.sse('/api/openchamber/events')).toBe(
         'https://api.example/api/openchamber/events?oc_client_token=oc_client_secret',
       );

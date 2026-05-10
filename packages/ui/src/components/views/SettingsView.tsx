@@ -45,7 +45,6 @@ import { SkillsSidebar } from '@/components/sections/skills/SkillsSidebar';
 import { SkillsPage } from '@/components/sections/skills/SkillsPage';
 import { ProjectsSidebar } from '@/components/sections/projects/ProjectsSidebar';
 import { ProjectsPage } from '@/components/sections/projects/ProjectsPage';
-import { RemoteInstancesSidebar } from '@/components/sections/remote-instances/RemoteInstancesSidebar';
 import { RemoteInstancesPage } from '@/components/sections/remote-instances/RemoteInstancesPage';
 import { ProvidersSidebar } from '@/components/sections/providers/ProvidersSidebar';
 import { ProvidersPage } from '@/components/sections/providers/ProvidersPage';
@@ -478,8 +477,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onClose, forceMobile
     switch (slug) {
       case 'projects':
         return <ProjectsSidebar onItemSelect={opts.onItemSelect} />;
-      case 'remote-instances':
-        return <RemoteInstancesSidebar onItemSelect={opts.onItemSelect} />;
       case 'agents':
         return <AgentsSidebar onItemSelect={opts.onItemSelect} />;
       case 'commands':
