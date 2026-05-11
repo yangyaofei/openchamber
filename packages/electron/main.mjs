@@ -1591,19 +1591,44 @@ const buildMiniChatUrl = ({ mode, sessionId, directory, projectId }) => {
   return url.toString();
 };
 
-const createMiniChatWindow = async ({ mode, sessionId = '', directory = '', projectId = '' } = {}) => {
+const miniChatSessionWindowKey = (runtimeConfig, sessionId) => {
+  const runtimeKey = normalizeHostUrl(runtimeConfig?.apiBaseUrl || state.apiBaseUrl || state.localOrigin || state.sidecarUrl || '') || 'local';
+  return `${runtimeKey}\n${sessionId}`;
+};
+
+const getWindowRuntimeConfig = (browserWindow) => {
+  const fallback = {
+    apiBaseUrl: state.apiBaseUrl || state.localOrigin || state.sidecarUrl || '',
+    clientToken: state.clientToken || '',
+  };
+  if (!browserWindow || browserWindow.isDestroyed()) return fallback;
+  const config = browserWindow.__ocRuntimeConfig;
+  return {
+    apiBaseUrl: typeof config?.apiBaseUrl === 'string' ? config.apiBaseUrl : fallback.apiBaseUrl,
+    clientToken: typeof config?.clientToken === 'string' ? config.clientToken : fallback.clientToken,
+  };
+};
+
+const createMiniChatWindow = async ({ mode, sessionId = '', directory = '', projectId = '', runtimeConfig = {} } = {}) => {
+  const effectiveRuntimeConfig = {
+    apiBaseUrl: normalizeHostUrl(runtimeConfig.apiBaseUrl || state.apiBaseUrl || state.localOrigin || state.sidecarUrl || ''),
+    clientToken: sanitizeClientTokenForStorage(runtimeConfig.clientToken || state.clientToken || ''),
+  };
+  const sessionWindowKey = mode === 'session' && sessionId ? miniChatSessionWindowKey(effectiveRuntimeConfig, sessionId) : '';
   if (mode === 'session' && sessionId) {
-    const existing = state.miniChatWindowsBySession.get(sessionId);
+    const existing = state.miniChatWindowsBySession.get(sessionWindowKey);
     if (existing && !existing.isDestroyed()) {
       if (existing.isMinimized()) existing.restore();
       existing.show();
       existing.focus();
       return existing;
     }
-    state.miniChatWindowsBySession.delete(sessionId);
+    state.miniChatWindowsBySession.delete(sessionWindowKey);
   }
 
   const desktopLocalOrigin = state.localOrigin || '';
+  const desktopApiBaseUrl = effectiveRuntimeConfig.apiBaseUrl || '';
+  const desktopClientToken = effectiveRuntimeConfig.clientToken || '';
   const desktopHome = os.homedir() || '';
   const desktopMacosMajor = String(macosMajorVersion());
   const browserWindow = new BrowserWindow({
@@ -1619,6 +1644,8 @@ const createMiniChatWindow = async ({ mode, sessionId = '', directory = '', proj
     webPreferences: {
       additionalArguments: [
         `--openchamber-local-origin=${desktopLocalOrigin}`,
+        `--openchamber-api-base-url=${desktopApiBaseUrl}`,
+        `--openchamber-client-token=${desktopClientToken}`,
         `--openchamber-home=${desktopHome}`,
         `--openchamber-macos-major=${desktopMacosMajor}`,
       ],
@@ -1630,12 +1657,14 @@ const createMiniChatWindow = async ({ mode, sessionId = '', directory = '', proj
     },
   });
   browserWindow.__ocLabel = nextWindowLabel();
+  browserWindow.__ocRuntimeConfig = effectiveRuntimeConfig;
+  browserWindow.__ocInitScript = buildInitScript(desktopLocalOrigin, state.bootOutcome, desktopApiBaseUrl, desktopClientToken);
   browserWindow.__ocMiniChat = true;
-  browserWindow.__ocMiniChatSessionId = mode === 'session' ? sessionId : '';
+  browserWindow.__ocMiniChatSessionId = sessionWindowKey;
   browserWindow.__ocPinned = false;
 
-  if (mode === 'session' && sessionId) {
-    state.miniChatWindowsBySession.set(sessionId, browserWindow);
+  if (sessionWindowKey) {
+    state.miniChatWindowsBySession.set(sessionWindowKey, browserWindow);
   }
 
   browserWindow.on('closed', () => {
@@ -1671,7 +1700,7 @@ const createMiniChatWindow = async ({ mode, sessionId = '', directory = '', proj
   browserWindow.webContents.on('will-navigate', (event, url) => {
     try {
       const target = new URL(url);
-      const local = new URL(state.localOrigin || state.sidecarUrl || '');
+      const local = new URL(shouldUsePackagedUi() ? packagedUiOrigin() : (state.localOrigin || state.sidecarUrl || ''));
       if (target.origin === local.origin) return;
     } catch {
     }
@@ -1679,8 +1708,9 @@ const createMiniChatWindow = async ({ mode, sessionId = '', directory = '', proj
     void shell.openExternal(url).catch(() => {});
   });
   browserWindow.webContents.on('dom-ready', () => {
-    if (state.initScript) {
-      void browserWindow.webContents.executeJavaScript(state.initScript).catch(() => {});
+    const initScript = browserWindow.__ocInitScript || state.initScript;
+    if (initScript) {
+      void browserWindow.webContents.executeJavaScript(initScript).catch(() => {});
     }
   });
 
@@ -1706,6 +1736,18 @@ const setMiniChatPinned = (browserWindow, pinned) => {
     }
   }
   return { pinned: nextPinned };
+};
+
+const resolveMiniChatRuntimeConfig = (browserWindow, args = {}) => {
+  const windowConfig = getWindowRuntimeConfig(browserWindow);
+  const argApiBaseUrl = typeof args.apiBaseUrl === 'string' ? args.apiBaseUrl : '';
+  const targetUrl = normalizeHostUrl(argApiBaseUrl || windowConfig.apiBaseUrl || state.apiBaseUrl || state.localOrigin || state.sidecarUrl || '');
+  const providedToken = sanitizeClientTokenForStorage(args.clientToken);
+  const storedToken = targetUrl ? resolveStoredClientTokenForUrl(targetUrl) : '';
+  return {
+    apiBaseUrl: targetUrl,
+    clientToken: providedToken || windowConfig.clientToken || storedToken || '',
+  };
 };
 
 const resolveInitialUrl = async () => {
@@ -2533,14 +2575,14 @@ const handleInvoke = async (browserWindow, command, args = {}) => {
       const sessionId = typeof args.sessionId === 'string' ? args.sessionId.trim() : '';
       if (!sessionId) throw new Error('Session id is required');
       const directory = typeof args.directory === 'string' ? args.directory.trim() : '';
-      await createMiniChatWindow({ mode: 'session', sessionId, directory });
+      await createMiniChatWindow({ mode: 'session', sessionId, directory, runtimeConfig: resolveMiniChatRuntimeConfig(browserWindow, args) });
       return null;
     }
 
     case 'desktop_open_draft_mini_chat_window': {
       const directory = typeof args.directory === 'string' ? args.directory.trim() : '';
       const projectId = typeof args.projectId === 'string' ? args.projectId.trim() : '';
-      await createMiniChatWindow({ mode: 'draft', directory, projectId });
+      await createMiniChatWindow({ mode: 'draft', directory, projectId, runtimeConfig: resolveMiniChatRuntimeConfig(browserWindow, args) });
       return null;
     }
 
