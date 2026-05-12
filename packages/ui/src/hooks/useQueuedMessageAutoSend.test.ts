@@ -1,8 +1,26 @@
-import { describe, expect, test } from 'bun:test';
-import { buildQueuedAutoSendPayload } from './useQueuedMessageAutoSend';
+import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import type { Agent } from '@opencode-ai/sdk/v2';
 import type { QueuedMessage } from '../stores/messageQueueStore';
 
+let visibleAgents: Agent[] = [];
+
+const getVisibleAgentsMock = mock(() => visibleAgents);
+
+mock.module('@/stores/useConfigStore', () => ({
+  useConfigStore: {
+    getState: () => ({
+      getVisibleAgents: getVisibleAgentsMock,
+    }),
+  },
+}));
+
+import { buildQueuedAutoSendPayload } from './useQueuedMessageAutoSend';
+
 describe('buildQueuedAutoSendPayload', () => {
+  beforeEach(() => {
+    visibleAgents = [];
+  });
+
   test('returns only the first queued message for auto-send', () => {
     const queue: QueuedMessage[] = [
       {
@@ -23,6 +41,29 @@ describe('buildQueuedAutoSendPayload', () => {
     expect(payload?.queuedMessageId).toBe('queued-1');
     expect(payload?.primaryText).toBe('first queued message');
     expect(payload?.primaryAttachments).toEqual([]);
+  });
+
+  test('uses the configured visible agents when parsing queued mentions', () => {
+    visibleAgents = [
+      {
+        name: 'Builder',
+        mode: 'secondary',
+      } as Agent,
+    ];
+
+    const queue: QueuedMessage[] = [
+      {
+        id: 'queued-mention',
+        content: '@Builder please take this',
+        createdAt: 1,
+      },
+    ];
+
+    const payload = buildQueuedAutoSendPayload(queue);
+
+    expect(payload).not.toBeNull();
+    expect(payload?.agentMentionName).toBe('Builder');
+    expect(payload?.primaryText).toBe('@Builder please take this');
   });
 
   test('preserves attachment-only queued messages as sendable payloads', () => {
