@@ -1626,6 +1626,7 @@ export const dict: Record<I18nKey, string> = {
   "chat.reasoningTrace.justification": "Justificativa",
   "chat.reasoningTrace.expandAria": "Expandir rastro de raciocínio",
   "chat.reasoningTrace.collapseAria": "Recolher rastro de raciocínio",
+  "chat.reasoningTrace.thought": "Pensou",
   "chat.messageBody.subtask.title": "Tarefa delegada",
   "chat.messageBody.subtask.hidePrompt": "Ocultar prompt",
   "chat.messageBody.subtask.showPrompt": "Mostrar prompt",

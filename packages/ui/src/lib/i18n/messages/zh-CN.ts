@@ -1626,6 +1626,7 @@ export const dict: Record<I18nKey, string> = {
   'chat.reasoningTrace.justification': '理由',
   'chat.reasoningTrace.expandAria': '展开推理轨迹',
   'chat.reasoningTrace.collapseAria': '折叠推理轨迹',
+  'chat.reasoningTrace.thought': '已思考',
   'chat.messageBody.subtask.title': '委派任务',
   'chat.messageBody.subtask.hidePrompt': '隐藏提示',
   'chat.messageBody.subtask.showPrompt': '显示提示',

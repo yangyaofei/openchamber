@@ -1660,6 +1660,7 @@ export const dict = {
   'chat.reasoningTrace.justification': 'Justification',
   'chat.reasoningTrace.expandAria': 'Expand reasoning trace',
   'chat.reasoningTrace.collapseAria': 'Collapse reasoning trace',
+  'chat.reasoningTrace.thought': 'Thought',
   'chat.messageBody.subtask.title': 'Delegated task',
   'chat.messageBody.subtask.hidePrompt': 'Hide prompt',
   'chat.messageBody.subtask.showPrompt': 'Show prompt',

@@ -1660,6 +1660,7 @@ export const dict: Record<I18nKey, string> = {
   'chat.reasoningTrace.justification': '근거',
   'chat.reasoningTrace.expandAria': '추론 트레이스 펼치기',
   'chat.reasoningTrace.collapseAria': '추론 트레이스 접기',
+  'chat.reasoningTrace.thought': '추론 완료',
   'chat.messageBody.subtask.title': '위임된 작업',
   'chat.messageBody.subtask.hidePrompt': '숨기기 프롬프트',
   'chat.messageBody.subtask.showPrompt': '표시 프롬프트',

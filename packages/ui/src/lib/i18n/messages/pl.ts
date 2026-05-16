@@ -863,6 +863,7 @@ export const dict: Record<I18nKey, string> = {
   'chat.reasoningTrace.justification': 'Uzasadnienie',
   'chat.reasoningTrace.expandAria': 'Rozwiń ślad rozumowania',
   'chat.reasoningTrace.collapseAria': 'Zwiń ślad rozumowania',
+  'chat.reasoningTrace.thought': 'Przemyślał',
   'chat.mobileStatus.editProjects.empty': 'Brak projektów do edycji',
   'chat.mobileStatus.editProjects.footer': 'Przeciągnij elementy, aby zmienić kolejność, lub użyj strzałek do przesuwania. Dotknij „edytuj”, aby zmienić szczegóły.',
   'chat.mobileStatus.editProjects.title': 'Edytuj projekty',

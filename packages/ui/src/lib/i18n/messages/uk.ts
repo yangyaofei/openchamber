@@ -1626,6 +1626,7 @@ export const dict: Record<I18nKey, string> = {
   "chat.reasoningTrace.justification": "Обґрунтування",
   "chat.reasoningTrace.expandAria": "Розгорнути слід міркування",
   "chat.reasoningTrace.collapseAria": "Згорнути слід міркування",
+  "chat.reasoningTrace.thought": "Обдумав",
   "chat.messageBody.subtask.title": "Делеговане завдання",
   "chat.messageBody.subtask.hidePrompt": "Приховати промпт",
   "chat.messageBody.subtask.showPrompt": "Показати промпт",
