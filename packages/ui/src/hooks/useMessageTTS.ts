@@ -66,8 +66,8 @@ export function useMessageTTS(): UseMessageTTSReturn {
         
         try {
             const shouldUseRaw = ttsInputMode === 'raw' && isServerProvider;
-            const textToSpeak = shouldUseRaw ? text : sanitizeForTTS(text);
             const sanitizedText = sanitizeForTTS(text);
+            const textToSpeak = shouldUseRaw ? text : sanitizedText;
             
             if (isServerProvider && isServerTTSAvailable) {
                 const voice = voiceProvider === 'openai-compatible' ? openaiCompatibleVoice : openaiVoice;
