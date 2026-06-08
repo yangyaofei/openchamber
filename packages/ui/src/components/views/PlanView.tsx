@@ -693,32 +693,32 @@ export const PlanView: React.FC<PlanViewProps> = ({ targetPath = null }) => {
               onToggle={() => saveMdViewMode(mdViewMode === 'preview' ? 'edit' : 'preview')}
             />
             {mdViewMode === 'preview' && showMessageTTSButtons && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-5 w-5 p-0"
-                  aria-label={isTTSPlaying ? t('planView.tts.stopSpeaking') : t('planView.tts.readAloud')}
-                  onClick={() => {
-                    if (isTTSPlaying) {
-                      stopTTS();
-                    } else if (content.trim()) {
-                      void playTTS(content);
-                    }
-                  }}
-                >
-                  {isTTSPlaying ? (
-                    <Icon name="stop" className="h-4 w-4 text-[color:var(--status-success)]" />
-                  ) : (
-                    <Icon name="volume-up" className="h-4 w-4" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent sideOffset={8}>
-                {isTTSPlaying ? t('planView.tts.stopSpeaking') : t('planView.tts.readAloud')}
-              </TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 w-5 p-0"
+                    aria-label={isTTSPlaying ? t('planView.tts.stopSpeaking') : t('planView.tts.readAloud')}
+                    onClick={() => {
+                      if (isTTSPlaying) {
+                        stopTTS();
+                      } else if (content.trim()) {
+                        void playTTS(content);
+                      }
+                    }}
+                  >
+                    {isTTSPlaying ? (
+                      <Icon name="stop" className="h-4 w-4 text-[color:var(--status-success)]" />
+                    ) : (
+                      <Icon name="volume-up" className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent sideOffset={8}>
+                  {isTTSPlaying ? t('planView.tts.stopSpeaking') : t('planView.tts.readAloud')}
+                </TooltipContent>
+              </Tooltip>
             )}
             <Button
               variant="ghost"
