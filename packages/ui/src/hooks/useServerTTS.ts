@@ -76,17 +76,18 @@ async function getServerTTSStatus(): Promise<boolean> {
 
 // ─── WAV streaming helpers ──────────────────────────────────────────────────
 
-const WAV_HEADER_SIZE = 44;
+export const WAV_HEADER_SIZE = 44;
 // Minimum PCM bytes to accumulate before scheduling a playback chunk
-const MIN_PCM_CHUNK_BYTES = 8192;
+export const MIN_PCM_CHUNK_BYTES = 8192;
 
-interface WavInfo {
+export interface WavInfo {
   sampleRate: number;
   numChannels: number;
   bitsPerSample: number;
 }
 
-function parseWavHeader(buf: Uint8Array): WavInfo | null {
+/** Parse WAV header from first 44 bytes. Returns null if not valid WAV. */
+export function parseWavHeader(buf: Uint8Array): WavInfo | null {
   if (buf.length < WAV_HEADER_SIZE) return null;
   const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
   const riff = String.fromCharCode(buf[0], buf[1], buf[2], buf[3]);
@@ -98,7 +99,8 @@ function parseWavHeader(buf: Uint8Array): WavInfo | null {
   };
 }
 
-function pcm16ToAudioBuffer(
+/** Convert 16-bit PCM bytes to an AudioBuffer */
+export function pcm16ToAudioBuffer(
   ctx: AudioContext,
   data: Uint8Array,
   wavInfo: WavInfo,
@@ -118,7 +120,7 @@ function pcm16ToAudioBuffer(
   return buffer;
 }
 
-function concatUint8(a: Uint8Array, b: Uint8Array): Uint8Array {
+export function concatUint8(a: Uint8Array, b: Uint8Array): Uint8Array {
   const result = new Uint8Array(a.length + b.length);
   result.set(a);
   result.set(b, a.length);
@@ -266,7 +268,13 @@ export function useServerTTS(options: UseServerTTSOptions = {}): UseServerTTSRet
       }
     }
     activeSourcesRef.current = [];
-    
+
+    // Disconnect gain node from destination to prevent audio graph leaks
+    if (gainNodeRef.current) {
+      try { gainNodeRef.current.disconnect(); } catch { /* */ }
+      gainNodeRef.current = null;
+    }
+
     // Cancel reader (closes the HTTP connection)
     if (readerRef.current) {
       readerRef.current.cancel().catch(() => {});
@@ -448,6 +456,7 @@ export function useServerTTS(options: UseServerTTSOptions = {}): UseServerTTSRet
       let wavInfo: WavInfo | null = null;
       let pcmAccumulator: Uint8Array = new Uint8Array(0);
       let isWav = false;
+      let formatDetected = false;
       let nonWavBuffer: Uint8Array = new Uint8Array(0);
 
       nextStartTimeRef.current = ctx.currentTime + 0.05;
@@ -481,7 +490,7 @@ export function useServerTTS(options: UseServerTTSOptions = {}): UseServerTTSRet
           if (done) break;
           if (!value || value.length === 0) continue;
 
-          if (!isWav && wavInfo === null) {
+          if (!formatDetected) {
             // First chunk(s): detect audio format
             headerBuffer = concatUint8(headerBuffer, value);
 
@@ -492,6 +501,7 @@ export function useServerTTS(options: UseServerTTSOptions = {}): UseServerTTSRet
               if (riff === 'RIFF') {
                 // WAV format detected — wait for full header
                 isWav = true;
+                formatDetected = true;
                 if (headerBuffer.length >= WAV_HEADER_SIZE) {
                   wavInfo = parseWavHeader(headerBuffer);
                   const pcm = headerBuffer.slice(WAV_HEADER_SIZE);
@@ -503,6 +513,7 @@ export function useServerTTS(options: UseServerTTSOptions = {}): UseServerTTSRet
               } else {
                 // Not WAV — accumulate for blob fallback
                 console.log('[useServerTTS] Non-WAV format, accumulating for blob fallback');
+                formatDetected = true;
                 nonWavBuffer = headerBuffer;
                 headerBuffer = new Uint8Array(0);
               }
